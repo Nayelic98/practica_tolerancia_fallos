@@ -1,0 +1,84 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ticketing
+      POSTGRES_USER: ticketing
+      POSTGRES_PASSWORD: ticketing
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ticketing"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  inventario-service:
+    build: ./services/inventario-service
+    environment:
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: ticketing
+      DB_USER: ticketing
+      DB_PASSWORD: ticketing
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8001:8000"
+
+  pagos-service:
+    build: ./services/pagos-service
+    environment:
+      FAILURE_RATE: "0.2"
+      TIMEOUT_RATE: "0.05"
+    ports:
+      - "8002:8000"
+
+  notificaciones-service:
+    build: ./services/notificaciones-service
+    environment:
+      FAILURE_RATE: "0.15"
+    ports:
+      - "8003:8000"
+
+  reservas-service:
+    build: ./services/reservas-service
+    environment:
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: ticketing
+      DB_USER: ticketing
+      DB_PASSWORD: ticketing
+      INVENTARIO_URL: http://inventario-service:8000
+      PAGOS_URL: http://pagos-service:8000
+      NOTIFICACIONES_URL: http://notificaciones-service:8000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      inventario-service:
+        condition: service_started
+      pagos-service:
+        condition: service_started
+      notificaciones-service:
+        condition: service_started
+    ports:
+      - "8004:8000"
+
+  api-gateway:
+    build: ./services/api-gateway
+    environment:
+      RESERVAS_URL: http://reservas-service:8000
+      INVENTARIO_URL: http://inventario-service:8000
+    depends_on:
+      - reservas-service
+    ports:
+      - "8000:8000"
+
+volumes:
+  pgdata:

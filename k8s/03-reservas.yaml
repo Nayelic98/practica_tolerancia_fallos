@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: reservas-service
+  namespace: ticketing
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: reservas-service
+  template:
+    metadata:
+      labels:
+        app: reservas-service
+    spec:
+      # Igual que Inventario: 2 réplicas obligadas a repartirse entre los 2 nodos físicos,
+      # de forma que la caída de un nodo no elimine todas las réplicas del servicio Core.
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values: ["reservas-service"]
+              topologyKey: "kubernetes.io/hostname"
+      containers:
+        - name: reservas-service
+          image: __REGISTRY__/reservas-service:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - secretRef:
+                name: postgres-credentials
+          env:
+            - name: DB_HOST
+              value: "postgres"
+            - name: DB_PORT
+              value: "5432"
+            - name: INVENTARIO_URL
+              value: "http://inventario-service:8000"
+            - name: PAGOS_URL
+              value: "http://pagos-service:8000"
+            - name: NOTIFICACIONES_URL
+              value: "http://notificaciones-service:8000"
+            - name: HTTP_TIMEOUT
+              value: "5"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "250m"
+              memory: "128Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: reservas-service
+  namespace: ticketing
+spec:
+  selector:
+    app: reservas-service
+  ports:
+    - port: 8000
+      targetPort: 8000

@@ -1,0 +1,124 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgres-credentials
+  namespace: ticketing
+type: Opaque
+stringData:
+  # Claves que espera la imagen oficial de postgres
+  POSTGRES_DB: ticketing
+  POSTGRES_USER: ticketing
+  POSTGRES_PASSWORD: ticketing
+  # Claves que esperan nuestros microservicios (mismos valores)
+  DB_NAME: ticketing
+  DB_USER: ticketing
+  DB_PASSWORD: ticketing
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init-script
+  namespace: ticketing
+data:
+  init.sql: |
+    CREATE TABLE IF NOT EXISTS inventory (
+        event_id         VARCHAR(50) PRIMARY KEY,
+        event_name       VARCHAR(200) NOT NULL,
+        total_seats      INT NOT NULL,
+        available_seats  INT NOT NULL CHECK (available_seats >= 0)
+    );
+
+    CREATE TABLE IF NOT EXISTS reservations (
+        id           SERIAL PRIMARY KEY,
+        event_id     VARCHAR(50) NOT NULL REFERENCES inventory(event_id),
+        user_email   VARCHAR(200) NOT NULL,
+        quantity     INT NOT NULL,
+        status       VARCHAR(20) NOT NULL,
+        payment_id   VARCHAR(100),
+        notified     BOOLEAN NOT NULL DEFAULT FALSE,
+        created_at   TIMESTAMP NOT NULL DEFAULT now(),
+        updated_at   TIMESTAMP NOT NULL DEFAULT now()
+    );
+
+    INSERT INTO inventory (event_id, event_name, total_seats, available_seats) VALUES
+        ('evt-001', 'Concierto Rock Nacional', 200, 200),
+        ('evt-002', 'Final de Copa',           500, 500),
+        ('evt-003', 'Obra de Teatro',           80,  80)
+    ON CONFLICT (event_id) DO NOTHING;
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-pvc
+  namespace: ticketing
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  namespace: ticketing
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          ports:
+            - containerPort: 5432
+          envFrom:
+            - secretRef:
+                name: postgres-credentials
+          volumeMounts:
+            - name: postgres-storage
+              mountPath: /var/lib/postgresql/data
+              subPath: pgdata
+            - name: init-script
+              mountPath: /docker-entrypoint-initdb.d
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "ticketing"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "ticketing"]
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+      volumes:
+        - name: postgres-storage
+          persistentVolumeClaim:
+            claimName: postgres-pvc
+        - name: init-script
+          configMap:
+            name: postgres-init-script
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: ticketing
+spec:
+  selector:
+    app: postgres
+  ports:
+    - port: 5432
+      targetPort: 5432

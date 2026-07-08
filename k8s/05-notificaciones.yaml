@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notificaciones-service
+  namespace: ticketing
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: notificaciones-service
+  template:
+    metadata:
+      labels:
+        app: notificaciones-service
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values: ["notificaciones-service"]
+                topologyKey: "kubernetes.io/hostname"
+      containers:
+        - name: notificaciones-service
+          image: __REGISTRY__/notificaciones-service:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+          env:
+            - name: MIN_LATENCY_MS
+              value: "50"
+            - name: MAX_LATENCY_MS
+              value: "1500"
+            - name: FAILURE_RATE
+              value: "0.15"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: "25m"
+              memory: "64Mi"
+            limits:
+              cpu: "150m"
+              memory: "128Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: notificaciones-service
+  namespace: ticketing
+spec:
+  selector:
+    app: notificaciones-service
+  ports:
+    - port: 8000
+      targetPort: 8000

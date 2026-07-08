@@ -1,0 +1,92 @@
+<svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#333333"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1200" height="800" fill="#ffffff"/>
+
+  <text x="600" y="28" text-anchor="middle" font-size="20" font-weight="bold" fill="#1a1a1a">
+    Sistema de Reservas de Entradas — 2 nodos Kubernetes (k3s) reales
+  </text>
+
+  <!-- Cliente -->
+  <rect x="500" y="45" width="200" height="45" rx="8" fill="#fff3cd" stroke="#b58900" stroke-width="1.5"/>
+  <text x="600" y="72" text-anchor="middle" font-size="14" fill="#1a1a1a">Cliente / navegador</text>
+  <line x1="600" y1="90" x2="600" y2="150" stroke="#333333" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="610" y="115" font-size="11" fill="#555555">REST :30080 (NodePort)</text>
+
+  <!-- Node backgrounds -->
+  <rect x="40" y="150" width="520" height="610" rx="10" fill="#e7f0fb" stroke="#3b6fa0" stroke-width="1.5"/>
+  <text x="300" y="175" text-anchor="middle" font-size="15" font-weight="bold" fill="#1f4e79">
+    NODO A — Linux (k3s server, control-plane + worker)
+  </text>
+
+  <rect x="640" y="150" width="520" height="610" rx="10" fill="#eaf7ee" stroke="#3a8f4c" stroke-width="1.5"/>
+  <text x="900" y="175" text-anchor="middle" font-size="15" font-weight="bold" fill="#1f5c30">
+    NODO B — Windows + WSL2 (k3s agent)
+  </text>
+
+  <!-- Row labels (logical k8s Service, spans both nodes) -->
+  <text x="600" y="205" text-anchor="middle" font-size="12" fill="#444444">api-gateway (Service NodePort, 2 réplicas)</text>
+  <text x="600" y="305" text-anchor="middle" font-size="12" fill="#444444">reservas-service — Core (Service ClusterIP, 2 réplicas, podAntiAffinity)</text>
+  <text x="600" y="405" text-anchor="middle" font-size="12" fill="#444444">inventario-service (Service ClusterIP, 2 réplicas, podAntiAffinity)</text>
+  <text x="600" y="505" text-anchor="middle" font-size="12" fill="#444444">stubs con latencia/fallos simulados</text>
+  <text x="600" y="620" text-anchor="middle" font-size="12" fill="#444444">persistencia</text>
+
+  <!-- Row 1: api-gateway -->
+  <rect x="80" y="215" width="440" height="55" rx="6" fill="#ffffff" stroke="#3b6fa0" stroke-width="1.5"/>
+  <text x="300" y="248" text-anchor="middle" font-size="13" fill="#1a1a1a">api-gateway (réplica A)</text>
+  <rect x="680" y="215" width="440" height="55" rx="6" fill="#ffffff" stroke="#3a8f4c" stroke-width="1.5"/>
+  <text x="900" y="248" text-anchor="middle" font-size="13" fill="#1a1a1a">api-gateway (réplica B)</text>
+  <line x1="520" y1="242" x2="680" y2="242" stroke="#999999" stroke-width="1.5" stroke-dasharray="4 3"/>
+
+  <!-- spine: gateway -> reservas -->
+  <line x1="600" y1="270" x2="600" y2="315" stroke="#333333" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- Row 2: reservas-service -->
+  <rect x="80" y="315" width="440" height="55" rx="6" fill="#ffffff" stroke="#3b6fa0" stroke-width="1.5"/>
+  <text x="300" y="348" text-anchor="middle" font-size="13" fill="#1a1a1a">reservas-service (réplica A)</text>
+  <rect x="680" y="315" width="440" height="55" rx="6" fill="#ffffff" stroke="#3a8f4c" stroke-width="1.5"/>
+  <text x="900" y="348" text-anchor="middle" font-size="13" fill="#1a1a1a">reservas-service (réplica B)</text>
+  <line x1="520" y1="342" x2="680" y2="342" stroke="#999999" stroke-width="1.5" stroke-dasharray="4 3"/>
+
+  <!-- spine: reservas -> inventario -->
+  <line x1="600" y1="370" x2="600" y2="415" stroke="#333333" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- Row 3: inventario-service -->
+  <rect x="80" y="415" width="440" height="55" rx="6" fill="#ffffff" stroke="#3b6fa0" stroke-width="1.5"/>
+  <text x="300" y="448" text-anchor="middle" font-size="13" fill="#1a1a1a">inventario-service (réplica A)</text>
+  <rect x="680" y="415" width="440" height="55" rx="6" fill="#ffffff" stroke="#3a8f4c" stroke-width="1.5"/>
+  <text x="900" y="448" text-anchor="middle" font-size="13" fill="#1a1a1a">inventario-service (réplica B)</text>
+  <line x1="520" y1="442" x2="680" y2="442" stroke="#999999" stroke-width="1.5" stroke-dasharray="4 3"/>
+
+  <!-- Row 4: stubs -->
+  <rect x="80" y="515" width="440" height="55" rx="6" fill="#fdeeee" stroke="#b04a4a" stroke-width="1.5"/>
+  <text x="300" y="548" text-anchor="middle" font-size="13" fill="#1a1a1a">notificaciones-service (stub, 2 réplicas)</text>
+  <rect x="680" y="515" width="440" height="55" rx="6" fill="#fdeeee" stroke="#b04a4a" stroke-width="1.5"/>
+  <text x="900" y="548" text-anchor="middle" font-size="13" fill="#1a1a1a">pagos-service (stub, 2 réplicas)</text>
+
+  <!-- reservas -> pagos / notificaciones -->
+  <line x1="480" y1="370" x2="300" y2="515" stroke="#333333" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="720" y1="370" x2="900" y2="515" stroke="#333333" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Row 5: Postgres (solo Nodo A, pinned por PVC local-path) -->
+  <rect x="80" y="630" width="440" height="80" rx="6" fill="#eee7fb" stroke="#6a3fa0" stroke-width="1.5"/>
+  <text x="300" y="660" text-anchor="middle" font-size="13" font-weight="bold" fill="#1a1a1a">PostgreSQL (1 réplica)</text>
+  <text x="300" y="680" text-anchor="middle" font-size="11" fill="#444444">PVC local-path — fijada a Nodo A</text>
+  <text x="300" y="697" text-anchor="middle" font-size="11" fill="#444444">tablas: inventory, reservations</text>
+
+  <!-- inventario/reservas -> postgres -->
+  <line x1="300" y1="470" x2="300" y2="630" stroke="#333333" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="330" y1="370" x2="300" y2="630" stroke="#333333" stroke-width="1.5" marker-end="url(#arrow)" stroke-dasharray="2 2"/>
+
+  <!-- Leyenda -->
+  <rect x="40" y="770" width="14" height="14" fill="#ffffff" stroke="#3b6fa0"/>
+  <text x="60" y="781" font-size="11" fill="#444444">Componente / réplica (pod)</text>
+  <line x1="230" y1="777" x2="260" y2="777" stroke="#999999" stroke-width="1.5" stroke-dasharray="4 3"/>
+  <text x="266" y="781" font-size="11" fill="#444444">Mismo Service (balanceo entre nodos)</text>
+  <line x1="560" y1="777" x2="590" y2="777" stroke="#333333" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="596" y="781" font-size="11" fill="#444444">Llamada REST</text>
+</svg>

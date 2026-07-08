@@ -1,0 +1,74 @@
+# Recurso de CAOS, no de la arquitectura base: un proxy TCP delante de Postgres
+# que permite cortar/restablecer la conexión a demanda (vía su API HTTP en :8474)
+# para simular el escenario "Base de Datos Intermitente" sin depender de
+# NetworkPolicies (k3s trae Flannel por defecto, que no las aplica).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: toxiproxy-config
+  namespace: ticketing
+data:
+  toxiproxy.json: |
+    [
+      {
+        "name": "postgres",
+        "listen": "0.0.0.0:5432",
+        "upstream": "postgres:5432",
+        "enabled": true
+      }
+    ]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: toxiproxy
+  namespace: ticketing
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: toxiproxy
+  template:
+    metadata:
+      labels:
+        app: toxiproxy
+    spec:
+      containers:
+        - name: toxiproxy
+          image: ghcr.io/shopify/toxiproxy:2.9.0
+          args: ["-host=0.0.0.0", "-config=/config/toxiproxy.json"]
+          ports:
+            - containerPort: 5432
+              name: postgres
+            - containerPort: 8474
+              name: admin
+          volumeMounts:
+            - name: config
+              mountPath: /config
+          resources:
+            requests:
+              cpu: "25m"
+              memory: "32Mi"
+            limits:
+              cpu: "100m"
+              memory: "64Mi"
+      volumes:
+        - name: config
+          configMap:
+            name: toxiproxy-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: toxiproxy
+  namespace: ticketing
+spec:
+  selector:
+    app: toxiproxy
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: 5432
+    - name: admin
+      port: 8474
+      targetPort: 8474

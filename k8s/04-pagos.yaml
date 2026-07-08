@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pagos-service
+  namespace: ticketing
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: pagos-service
+  template:
+    metadata:
+      labels:
+        app: pagos-service
+    spec:
+      # Preferencia (no obligación) de repartir también este stub entre nodos.
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values: ["pagos-service"]
+                topologyKey: "kubernetes.io/hostname"
+      containers:
+        - name: pagos-service
+          image: __REGISTRY__/pagos-service:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+          env:
+            - name: MIN_LATENCY_MS
+              value: "100"
+            - name: MAX_LATENCY_MS
+              value: "2500"
+            - name: FAILURE_RATE
+              value: "0.2"
+            - name: TIMEOUT_RATE
+              value: "0.05"
+            - name: SLOW_TIMEOUT_MS
+              value: "8000"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: "25m"
+              memory: "64Mi"
+            limits:
+              cpu: "150m"
+              memory: "128Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pagos-service
+  namespace: ticketing
+spec:
+  selector:
+    app: pagos-service
+  ports:
+    - port: 8000
+      targetPort: 8000

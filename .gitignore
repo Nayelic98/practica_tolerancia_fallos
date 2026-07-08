@@ -1,0 +1,4 @@
+__pycache__/
+*.pyc
+k8s/generated/
+evidence/
