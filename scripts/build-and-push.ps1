@@ -13,10 +13,13 @@ $ErrorActionPreference = "Stop"
 $services = @("api-gateway", "reservas-service", "inventario-service", "pagos-service", "notificaciones-service")
 
 foreach ($svc in $services) {
-    Write-Host "==> Construyendo $Registry/$svc:latest"
-    docker build -t "$Registry/$svc:latest" "./services/$svc"
-    Write-Host "==> Subiendo $Registry/$svc:latest"
-    docker push "$Registry/$svc:latest"
+    $image = "${Registry}/${svc}:latest"
+    Write-Host "==> Construyendo $image"
+    docker build -t $image "./services/$svc"
+    if ($LASTEXITCODE -ne 0) { throw "docker build failed for $svc" }
+    Write-Host "==> Subiendo $image"
+    docker push $image
+    if ($LASTEXITCODE -ne 0) { throw "docker push failed for $svc" }
 }
 
 Write-Host "==> Generando manifiestos con el registry sustituido en k8s/generated/"
