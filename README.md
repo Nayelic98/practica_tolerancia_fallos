@@ -451,7 +451,10 @@ kubectl -n ticketing logs -l app=reservas-service --since=3m | grep -i "reintent
 Las 4 demos se corrieron en vivo sobre el clúster real de 2 nodos, generando tráfico
 real con [`scripts/chaos/load_client.py`](scripts/chaos/load_client.py) desde la
 terminal de un integrante en paralelo al script de inyección corrido por el otro, con
-logs en vivo (`kubectl logs -f`) capturados simultáneamente.
+logs en vivo (`kubectl logs -f`) capturados simultáneamente. El guion completo para
+presentar en clase (comando exacto de cada paso, qué observar antes/durante/después, y
+qué decir para cada demo) está en
+[docs/guion_demo.docx](docs/guion_demo.docx).
 
 | Demo | Patrón | Resultado |
 |---|---|---|
