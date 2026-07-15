@@ -36,7 +36,7 @@ spec:
             - name: INVENTARIO_URL
               value: "http://inventario-service:8000"
             - name: HTTP_TIMEOUT
-              value: "6"
+              value: "10"
           readinessProbe:
             httpGet:
               path: /health

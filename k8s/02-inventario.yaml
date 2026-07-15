@@ -5,6 +5,13 @@ metadata:
   namespace: ticketing
 spec:
   replicas: 2
+  strategy:
+    # RollingUpdate no puede funcionar con podAntiAffinity "required" en
+    # exactamente 2 nodos: cualquier actualización necesita un 3er slot
+    # transitorio para tener la réplica vieja y la nueva coexistiendo, que no
+    # existe. Recreate evita el deadlock de programación de raíz, a cambio de
+    # un instante de downtime total del servicio durante cada actualización.
+    type: Recreate
   selector:
     matchLabels:
       app: inventario-service
